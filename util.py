@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-
+import tensorflow as tf
+import numpy as np
+import math
 
 def plot(samples):
     fig = plt.figure(figsize=(10, 10))
@@ -28,3 +30,17 @@ def plot_loss(train_loss, test_loss, name):
     plt.grid(True)
     plt.legend()
     plt.show()
+
+def get_normal_prob(eps):
+    prob = tf.exp(-0.5*eps**2)/(tf.sqrt(2*np.float64(math.pi)))
+    prob = prob[:,0]*prob[:,1]
+    prob = tf.reshape(prob, [-1,1])
+    return prob
+
+def get_sample_z(mu, var):
+    # TODO var or log_var
+    eps = tf.random_normal(shape=tf.shape(mu), dtype=tf.float64)
+    sample =  mu + tf.exp(var / 2) * eps
+    prob = get_normal_prob(eps)
+    return sample, prob
+
