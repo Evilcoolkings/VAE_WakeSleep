@@ -20,7 +20,7 @@ def plot(samples):
     return fig
 
 def plot_loss(train_loss, test_loss, name):
-    plt.figure()
+    fig = plt.figure()
     plt.plot(train_loss,"g-",label="train_L")
     plt.plot(test_loss,"r-.",label="test_L")
 
@@ -29,7 +29,8 @@ def plot_loss(train_loss, test_loss, name):
 
     plt.grid(True)
     plt.legend()
-    plt.show()
+    fig.savefig(name+".png")
+
 
 def get_normal_prob(eps):
     prob = tf.exp(-0.5*eps**2)/(tf.sqrt(2*np.float64(math.pi)))

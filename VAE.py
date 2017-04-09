@@ -71,7 +71,7 @@ def get_loss(X):
 
     # E[log P(X|Z)]
     E_loss = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(targets=X, logits=logits), 1)
-    # D_KL(Q(z|X) || P(z|X))
+    # D_KL(Q(z|X) || P(z))
     KL_loss = 0.5 * tf.reduce_sum(tf.exp(Z_var) + Z_mu ** 2 - 1. - Z_var, 1)
     # VAE loss
     vae_loss = tf.reduce_mean(E_loss + KL_loss)

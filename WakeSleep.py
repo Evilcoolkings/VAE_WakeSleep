@@ -85,24 +85,141 @@ def get_Wake_Phase_solver(loss):
 '''
 Sleep Phase
 '''
-def get_pxz_samples():
-    Z_samples = np.random.randn(batch_size, Z_dim)
+def get_pxz_samples(sess):
+    Z_samples_var = np.random.randn(batch_size, Z_dim)
+    feed_dict = {
+        Z_ph: Z_samples_var
+    }
+    X_samples, _ = dencoder_network(Z_ph)
+    X_samples_var = sess.run(X_samples, feed_dict = feed_dict )
+    X_samples_var = np.random.binomial(1, p=X_samples_var)
+
+    return X_samples_var, Z_samples_var
+
+def get_Sleep_Phase_loss(X, Z):
+    Z_mu, Z_logvar = encoder_network(X)
+    Z_var = tf.exp(0.5 * Z_logvar)
+    loss = tf.reduce_sum(0.5 * (Z - Z_mu) ** 2 / (Z_var ** 2) + Z_logvar)
+    return loss
+
+def get_Sleep_Phase_solver(loss):
+    train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'Encode')
+    solver = tf.train.AdamOptimizer().minimize(loss, var_list= train_vars)
+    return solver
+
+'''
+Plot part
+'''
+def plot_result(sess):
+    feed_dict ={
+        Z_ph:np.random.randn(100, Z_dim)
+    }
+    X_samples, _ = dencoder_network(Z_ph)
+    samples = sess.run(X_samples, feed_dict=feed_dict)
+    fig = plot(samples)
+    fig.savefig("Wake_Sleep.png")
+
+'''
+Evaluate part
+'''
+def evaluate_kernel(X):
+    Z_mu, Z_var = encoder_network(X)
+    Z_sample, prob_q = get_sample_z(Z_mu, Z_var)
+    prob, logits = dencoder_network(Z_sample)
+    prob_p_xz = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(targets=X, logits=logits), 1)
+    prob_p_xz = -tf.reshape(prob_p_xz, [-1,1])
+    prob_p_xz = tf.exp(prob_p_xz)
+    prob_p_z = get_normal_prob(Z_sample)
+    tmp = prob_p_xz*prob_p_z / prob_q
+    return tmp
+
+def evaluate(sess, X):
+
+    one_step_eval= evaluate_kernel(X)
+    trainresult = []
+    for i in range(Train_Epoch_Step):
+        feed_dict = {
+            X: mnist.train.next_batch(batch_size)[0]
+        }
+        tmpresult = []
+        for k in range(K_EVALUATION):
+            tmp = sess.run([one_step_eval], feed_dict=feed_dict)
+            tmpresult.append(tmp)
+        tmpresult = np.mean(np.asarray(tmpresult),0)
+        tmpresult = np.log(tmpresult)
+        trainresult.append(np.mean(tmpresult))
+
+    testresult = []
+    for i in range(Test_Epoch_Step):
+        feed_dict = {
+            X: mnist.test.next_batch(batch_size)[0]
+        }
+        tmpresult = []
+        for k in range(K_EVALUATION):
+            tmp= sess.run([one_step_eval], feed_dict=feed_dict)
+            tmpresult.append(tmp)
+        tmpresult = np.mean(np.asarray(tmpresult),0)
+        tmpresult = np.log(tmpresult)
+        testresult.append(np.mean(tmpresult))
+    return np.mean(trainresult), np.mean(testresult)
+
 
 def main():
 
+    # Get wake solver
     wake_loss = get_Wake_Phase_loss(X_ph)
     wake_solver = get_Wake_Phase_solver(wake_loss)
+    # Get sleep solver
+    sleep_loss = get_Sleep_Phase_loss(X_ph, Z_ph)
+    sleep_solver = get_Sleep_Phase_solver(sleep_loss)
+
+
     saver = tf.train.Saver()
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
+    train_loss = []
+    test_loss = []
 
+    for i in range(Total_Train_Step):
+        if i % Train_Epoch_Step == 0:
+            print(i)
+        if i % (10*Train_Epoch_Step) == 0:
+            print("<<<<<<<<<<<<<<evaluation>>>>>>>>>>>>>>")
+            print("Step:"+str(i))
+            train_L, test_L = evaluate(sess, X_ph)
+            train_loss.append(train_L)
+            test_loss.append(test_L)
+            print('train_L: %f, test_L: %f'%(train_L,test_L))
+        '''
+        Wake phase
+        '''
+        feed_dict = {
+            X_ph: mnist.train.next_batch(batch_size)[0]
+        }
+        sess.run(wake_solver, feed_dict=feed_dict)
 
-    feed_dict = {
-        X_ph: mnist.train.next_batch(batch_size)[0]
-    }
-    sess.run(wake_solver, feed_dict=feed_dict)
-    print("success")
+        '''
+        Sleep phase
+        '''
+        X_samples_var, Z_samples_var = get_pxz_samples(sess)
+        feed_dict = {
+            X_ph: X_samples_var,
+            Z_ph: Z_samples_var,
+        }
+        sess.run(sleep_solver, feed_dict=feed_dict)
 
+    #Final evaluation
+    print("<<<<<<<<<<<<<<evaluation>>>>>>>>>>>>>>")
+    print("Step:" + str(i))
+    train_L, test_L = evaluate(sess, X_ph)
+    train_loss.append(train_L)
+    test_loss.append(test_L)
+    print('train_L: %f, test_L: %f' % (train_L, test_L))
+    #plot result
+    plot_result(sess)
+    plot_loss(train_loss, test_loss, 'WakeSleep')
+    # save model
+    save_path = saver.save(sess, "Model/ws_model.ckpt")
 
 
 
