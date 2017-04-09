@@ -1,6 +1,7 @@
 from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
 import numpy as np
+import math
 from util import plot
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
@@ -10,7 +11,7 @@ Z_dim = 2
 batch_size = 32
 X_ph = tf.placeholder(tf.float32, shape=[None, X_dim])
 Z_ph = tf.placeholder(tf.float32, shape=[None, Z_dim])
-
+K_EVALUATION = 10
 
 '''
 Decoding part
@@ -51,12 +52,18 @@ def encoder_network(X):
     Z_var = tf.matmul(hidden_layer, Q_W2_var)+Q_b2_var
 
     return Z_mu, Z_var
+def get_normal_prob(eps):
+    prob = tf.exp(-0.5*eps**2)/(tf.sqrt(2*math.pi))
+    prob = prob[:,0]*prob[:,1]
+    prob = tf.reshape(prob, [-1,1])
+    return prob
 
 def get_sample_z(mu, var):
     # TODO var or log_var
     eps = tf.random_normal(shape=tf.shape(mu))
     sample =  mu + tf.exp(var / 2) * eps
-    return sample
+    prob = get_normal_prob(eps)
+    return sample, prob
 
 '''
 Training part
@@ -64,7 +71,7 @@ Training part
 def get_loss(X):
     # sample z from Q(z|x)
     Z_mu, Z_var = encoder_network(X)
-    Z_sample = get_sample_z(Z_mu, Z_var)
+    Z_sample, _ = get_sample_z(Z_mu, Z_var)
 
     _, logits = dencoder_network(Z_sample)
 
@@ -91,7 +98,36 @@ def plot_result(sess):
     samples = sess.run(X_samples, feed_dict=feed_dict)
     fig = plot(samples)
     fig.savefig("VAE.png")
+'''
+Evaluate part
+'''
+def evaluate_kernel(X):
+    Z_mu, Z_var = encoder_network(X)
+    Z_sample, prob_q = get_sample_z(Z_mu, Z_var)
+    _, logits = dencoder_network(Z_sample)
+    prob_p_xz = tf.reduce_sum(tf.exp(tf.nn.sigmoid_cross_entropy_with_logits(targets=X, logits=logits)),1)
+    prob_p_xz = tf.reshape(prob_p_xz, [-1,1])
+    prob_p_z = get_normal_prob(Z_sample)
+    tmp = prob_p_xz*prob_p_z / prob_q
+    return tmp
 
+def evaluate(sess, X):
+
+    one_step_eval = evaluate_kernel(X)
+    result = []
+    for i in range(100):
+        feed_dict = {
+            X: mnist.train.next_batch(batch_size)[0]
+        }
+        tmpresult = []
+        for k in range(K_EVALUATION):
+            tmp = sess.run(one_step_eval, feed_dict=feed_dict)
+            tmpresult.append(tmp)
+        tmpresult = np.mean(np.asarray(tmpresult),0)
+        tmpresult = np.log(tmpresult)
+        result.append(np.mean(tmpresult))
+
+    print(np.mean(result))
 
 def main():
 
@@ -99,8 +135,10 @@ def main():
     solver = get_solver(loss)
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
-    for i in range(100000):
-        if i % 100 == 0:
+
+    evaluate(sess, X_ph)
+    '''    for i in range(100):
+        if i % 10 == 0:
             print(i)
 
         feed_dict={
@@ -108,7 +146,8 @@ def main():
         }
         sess.run(solver, feed_dict = feed_dict)
 
-    plot_result(sess)
+    plot_result(sess)'''
+
 
 if __name__ == "__main__":
     main()
