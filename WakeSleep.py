@@ -8,7 +8,7 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 X_dim = mnist.train.images.shape[1]
 Hidden_dim = 512
 Z_dim = 2
-batch_size = 32
+batch_size = 512
 X_ph = tf.placeholder(tf.float64, shape=[None, X_dim])
 Z_ph = tf.placeholder(tf.float64, shape=[None, Z_dim])
 K_EVALUATION = 1000
@@ -138,6 +138,7 @@ def evaluate(sess, X):
     one_step_eval= evaluate_kernel(X)
     trainresult = []
     for i in range(Train_Epoch_Step):
+        print("Temp i:" + str(i))
         feed_dict = {
             X: mnist.train.next_batch(batch_size)[0]
         }
