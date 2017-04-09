@@ -218,7 +218,7 @@ def main():
     print('train_L: %f, test_L: %f' % (train_L, test_L))
     #plot result
     plot_result(sess)
-    plot_loss(train_loss, test_loss, 'WakeSleep')
+    plot_loss(train_loss, test_loss, 'WakeSleep_loss')
     # save model
     save_path = saver.save(sess, "Model/ws_model.ckpt")
 
