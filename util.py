@@ -16,3 +16,15 @@ def plot(samples):
         plt.imshow(sample.reshape(28, 28), cmap='Greys_r')
 
     return fig
+
+def plot_loss(train_loss, test_loss, name):
+    plt.figure()
+    plt.plot(train_loss,"g-",label="train_L")
+    plt.plot(test_loss,"r-.",label="test_L")
+
+    plt.xlabel("10 epoches")
+    plt.title(name)
+
+    plt.grid(True)
+    plt.legend()
+    plt.show()
