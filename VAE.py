@@ -12,9 +12,12 @@ batch_size = 32
 X_ph = tf.placeholder(tf.float64, shape=[None, X_dim])
 Z_ph = tf.placeholder(tf.float64, shape=[None, Z_dim])
 K_EVALUATION = 1000
-Total_Train_Step = 200000
-Train_Epoch_Step = 2000
-Test_Epoch_Step = 300
+NUM_EPOCH = 100
+TRAIN_DATA_SIZE = 60000
+TEST_DATA_SIZE = 10000
+Total_Train_Step = int(math.ceil(TRAIN_DATA_SIZE/batch_size))*NUM_EPOCH
+Train_Epoch_Step = int(math.ceil(TRAIN_DATA_SIZE/batch_size))
+Test_Epoch_Step = int(math.ceil(TEST_DATA_SIZE/batch_size))
 
 '''
 Decoding part
@@ -114,11 +117,11 @@ def evaluate_kernel(X):
     prob_p_xz = tf.exp(prob_p_xz)
     prob_p_z = get_normal_prob(Z_sample)
     tmp = prob_p_xz*prob_p_z / prob_q
-    return tmp, prob_p_xz, logits
+    return tmp
 
 def evaluate(sess, X):
 
-    one_step_eval, a,b = evaluate_kernel(X)
+    one_step_eval= evaluate_kernel(X)
     trainresult = []
     for i in range(Train_Epoch_Step):
         feed_dict = {
@@ -126,7 +129,7 @@ def evaluate(sess, X):
         }
         tmpresult = []
         for k in range(K_EVALUATION):
-            tmp, tmpa, tmpb= sess.run([one_step_eval,a,b], feed_dict=feed_dict)
+            tmp = sess.run([one_step_eval], feed_dict=feed_dict)
             tmpresult.append(tmp)
         tmpresult = np.mean(np.asarray(tmpresult),0)
         tmpresult = np.log(tmpresult)
@@ -139,7 +142,7 @@ def evaluate(sess, X):
         }
         tmpresult = []
         for k in range(K_EVALUATION):
-            tmp, tmpa, tmpb= sess.run([one_step_eval,a,b], feed_dict=feed_dict)
+            tmp= sess.run([one_step_eval], feed_dict=feed_dict)
             tmpresult.append(tmp)
         tmpresult = np.mean(np.asarray(tmpresult),0)
         tmpresult = np.log(tmpresult)
