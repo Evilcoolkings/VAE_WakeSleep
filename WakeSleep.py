@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 import math
 from util import plot, plot_loss, get_normal_prob, get_sample_z
+import matplotlib.pyplot as plt
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 X_dim = mnist.train.images.shape[1]
@@ -116,7 +117,7 @@ def plot_result(sess):
     }
     X_samples, _ = dencoder_network(Z_ph)
     samples = sess.run(X_samples, feed_dict=feed_dict)
-    fig = plot(samples)
+    fig = plot(samples,10)
     fig.savefig("Wake_Sleep.png")
 
 '''
@@ -163,7 +164,61 @@ def evaluate(sess, X):
         tmpresult = np.log(tmpresult)
         testresult.append(np.mean(tmpresult))
     return np.mean(trainresult), np.mean(testresult)
+'''
+Visualization part
+'''
+def visulazation(sess, X):
+    Z_samples={}
+    colors =['#9e0142',
+            '#d53e4f',
+            '#f46d43',
+            '#fdae61',
+            '#fee08b',
+            '#e6f598',
+            '#abdda4',
+            '#66c2a5',
+            '#3288bd',
+            '#5e4fa2']
 
+    Z , var= encoder_network(X)
+    for i in range(Test_Epoch_Step):
+        image, label = mnist.test.next_batch(batch_size)
+        label = np.where(label==1)[1].reshape((-1,1))
+        feed_dict = {
+            X: image
+        }
+        Z_encode = sess.run(Z, feed_dict=feed_dict)
+        for label, sample in zip(label, Z_encode):
+            label = int(label)
+            if label not in Z_samples.keys():
+                Z_samples[label] = []
+            Z_samples[label].append(sample)
+
+    fig = plt.figure()
+    for i in range(10):
+        plt.scatter(np.asarray(Z_samples[i])[:,0],np.asarray(Z_samples[i])[:,1],
+                    color = colors[i],label=str(i))
+    plt.legend()
+    plt.grid(True)
+    plt.title("WS_Z_distribution")
+    #plt.show()
+    fig.savefig("WS_Z_distribution.png")
+
+
+
+    z = np.zeros((400,Z_dim))
+    for i in range(20):
+        for j in range(20):
+            z[i*20+j]=np.array([-3.8+i*0.4, -3.8+j*0.4])
+
+    feed_dict ={
+        Z_ph:z
+    }
+    X_samples, _ = dencoder_network(Z_ph)
+    samples = sess.run(X_samples, feed_dict=feed_dict)
+    fig = plot(samples,20)
+    # plt.show()
+    fig.savefig("WS_X_distribution.png")
 
 def main():
 
@@ -221,7 +276,11 @@ def main():
     plot_loss(train_loss, test_loss, 'WakeSleep_loss')
     # save model
     save_path = saver.save(sess, "Model/ws_model.ckpt")
+    print("Save the model in:"+str(save_path))
 
+
+    print("Begin visualization")
+    visulazation(sess, X_ph)
 
 
 if __name__ == "__main__":

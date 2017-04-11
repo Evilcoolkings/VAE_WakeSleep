@@ -4,9 +4,9 @@ import tensorflow as tf
 import numpy as np
 import math
 
-def plot(samples):
-    fig = plt.figure(figsize=(10, 10))
-    gs = gridspec.GridSpec(10, 10)
+def plot(samples, num):
+    fig = plt.figure(figsize=(num, num))
+    gs = gridspec.GridSpec(num, num)
     gs.update(wspace=0.05, hspace=0.05)
 
     for i, sample in enumerate(samples):
