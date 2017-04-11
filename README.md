@@ -120,9 +120,9 @@ ${q_\phi(z|x)}\equiv 0$ on $[0,1]\times [0,1]$.
 Implementation and Experience
 =============================
 
-![image](VAE/Sleep_Wake_loss) ![$L_{1000}$ of both algorithm. The left
+![image](https://github.com/cmusjtuliuyuan/VAE_WakeSleep/blob/master/Sleep_Wake_loss.png) ![$L_{1000}$ of both algorithm. The left
 one is about sleep wake algorithm, and the right part is about AEVB
-algorithm](VAE/VAE_loss "fig:")[fig:1]
+algorithm](https://github.com/cmusjtuliuyuan/VAE_WakeSleep/blob/master/VAE_loss.png "fig:")[fig:1]
 
 ![image](VAE/Wake_Sleep) ![Visualize of both algorithm. The left one is
 about sleep wake algorithm, and the right part is about AEVB
