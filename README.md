@@ -5,6 +5,16 @@ It contains two algorithms: Wake-Sleep algorithm and Autoencoding variational Ba
 
 You can see report.pdf to know the details of these two algorithm.
 
+Need tensorflow version 0.11
+
+
+When you want to run the model, just use the following command:
+
+Python WakeSleep.py
+
+Python VAE.py
+
+It will train the model, evaluate by L1000, generate random samples, draw X,Z distribution.
 
 Implementation and Experience
 =============================
